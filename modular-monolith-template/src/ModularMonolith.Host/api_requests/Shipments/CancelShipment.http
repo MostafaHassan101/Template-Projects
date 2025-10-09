@@ -1,0 +1,4 @@
+### Cancel Shipment
+POST {{host}}/api/shipments/cancel/10000005
+Content-Type: application/json
+Authorization: Bearer {{token}}

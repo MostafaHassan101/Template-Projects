@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="coverlet.collector">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="NetArchTest.Rules" />
+        <PackageReference Include="xunit" />
+      <PackageReference Include="xunit.runner.visualstudio">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Carriers\Modules.Carriers.Domain\Modules.Carriers.Domain.csproj" />
+      <ProjectReference Include="..\..\Carriers\Modules.Carriers.Features\Modules.Carriers.Features.csproj" />
+      <ProjectReference Include="..\..\Carriers\Modules.Carriers.Infrastructure\Modules.Carriers.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\Carriers\Modules.Carriers.PublicApi\Modules.Carriers.PublicApi.csproj" />
+      <ProjectReference Include="..\..\Shipments\Modules.Shipments.Domain\Modules.Shipments.Domain.csproj" />
+      <ProjectReference Include="..\..\Shipments\Modules.Shipments.Features\Modules.Shipments.Features.csproj" />
+      <ProjectReference Include="..\..\Shipments\Modules.Shipments.Infrastructure\Modules.Shipments.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\Stocks\Modules.Stocks.Domain\Modules.Stocks.Domain.csproj" />
+      <ProjectReference Include="..\..\Stocks\Modules.Stocks.Features\Modules.Stocks.Features.csproj" />
+      <ProjectReference Include="..\..\Stocks\Modules.Stocks.Infrastructure\Modules.Stocks.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\Stocks\Modules.Stocks.PublicApi\Modules.Stocks.PublicApi.csproj" />
+      <ProjectReference Include="..\..\Users\Modules.Users.Domain\Modules.Users.Domain.csproj" />
+      <ProjectReference Include="..\..\Users\Modules.Users.Features\Modules.Users.Features.csproj" />
+      <ProjectReference Include="..\..\Users\Modules.Users.Infrastructure\Modules.Users.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>

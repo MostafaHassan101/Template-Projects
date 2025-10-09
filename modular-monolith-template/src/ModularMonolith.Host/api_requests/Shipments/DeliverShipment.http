@@ -1,0 +1,4 @@
+### Deliver Shipment
+POST {{host}}/api/shipments/deliver/10000005
+Content-Type: application/json
+Authorization: Bearer {{token}}

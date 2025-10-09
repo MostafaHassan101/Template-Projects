@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Bogus" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Carriers\Modules.Carriers.PublicApi\Modules.Carriers.PublicApi.csproj" />
+        <ProjectReference Include="..\..\Common\Modules.Common.API\Modules.Common.API.csproj" />
+        <ProjectReference Include="..\..\Common\Modules.Common.Application\Modules.Common.Application.csproj" />
+        <ProjectReference Include="..\..\Stocks\Modules.Stocks.PublicApi\Modules.Stocks.PublicApi.csproj" />
+        <ProjectReference Include="..\Modules.Shipments.Domain\Modules.Shipments.Domain.csproj" />
+        <ProjectReference Include="..\Modules.Shipments.Infrastructure\Modules.Shipments.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>

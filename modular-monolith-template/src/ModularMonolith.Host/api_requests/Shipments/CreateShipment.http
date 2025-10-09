@@ -1,0 +1,25 @@
+### Create Shipment
+POST {{host}}/api/shipments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "orderId": "10000003",
+    "carrier": "DHL",
+    "receiverEmail": "customer@example.com",
+    "address": {
+        "street": "123 Main St",
+        "city": "Springfield",
+        "zip": "12345"
+    },
+    "items": [
+        {
+            "product": "Generic Concrete Cheese",
+            "quantity": 2
+        },
+        {
+            "product": "Unbranded Frozen Table",
+            "quantity": 3
+        }
+    ]
+}

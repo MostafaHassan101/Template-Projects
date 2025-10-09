@@ -1,0 +1,3 @@
+### Get Active Carriers
+GET {{host}}/api/carriers/active
+Authorization: Bearer {{token}}

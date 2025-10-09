@@ -1,0 +1,9 @@
+### Create Stock
+POST {{host}}/api/stocks
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productName": "Samsung Galaxy S25",
+  "quantity": 75
+}

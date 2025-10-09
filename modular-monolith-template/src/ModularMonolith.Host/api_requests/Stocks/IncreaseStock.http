@@ -1,0 +1,21 @@
+### Increase Stock
+POST {{host}}/api/stocks/increase
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productName": "Gorgeous Granite Hat",
+  "quantity": 4
+}
+
+### Increase Stock - Another Product
+POST {{host}}/api/stocks/increase
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productName": "Samsung Galaxy S25",
+  "quantity": 25
+}
+
+###
