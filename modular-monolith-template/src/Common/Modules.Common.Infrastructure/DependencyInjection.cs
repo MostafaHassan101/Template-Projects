@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Modules.Common.Infrastructure.Configuration;
 using Modules.Common.Infrastructure.Policies;
-using Npgsql;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -42,7 +41,7 @@ public static class DependencyInjection
                 tracing
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddNpgsql()
+                    .AddSqlClientInstrumentation()
                     .AddSource(activityModuleNames);
 
                 tracing.AddOtlpExporter();

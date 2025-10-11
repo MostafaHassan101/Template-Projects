@@ -1,20 +1,18 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using ModularMonolith.Host;
-using Npgsql;
+using Microsoft.Data.SqlClient;
 using Respawn;
-using Testcontainers.PostgreSql;
+using Testcontainers.MsSql;
 
 namespace Modules.Shipments.Tests.Integration.Configuration;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<IApiMarker>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
-		    .WithImage("postgres:latest")
-		    .WithDatabase("test")
-		    .WithUsername("admin")
-		    .WithPassword("admin")
+    private readonly MsSqlContainer _dbContainer = new MsSqlBuilder()
+		    .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+		    .WithPassword("YourStrong@Passw0rd")
 		    .Build();
 
     private DbConnection _dbConnection = null!;
@@ -26,7 +24,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<IApiMarker>, IA
     {
 	    await _dbContainer.StartAsync();
 
-	    _dbConnection = new NpgsqlConnection(_dbContainer.GetConnectionString());
+	    _dbConnection = new SqlConnection(_dbContainer.GetConnectionString());
 
 	    HttpClient = CreateClient();
 
@@ -47,7 +45,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<IApiMarker>, IA
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-	    builder.UseSetting("ConnectionStrings:Postgres", _dbContainer.GetConnectionString());
+	    builder.UseSetting("ConnectionStrings:SqlServer", _dbContainer.GetConnectionString());
     }
 
     private async Task InitializeRespawnerAsync()
@@ -55,7 +53,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<IApiMarker>, IA
 	    _respawner = await Respawner.CreateAsync(_dbConnection, new RespawnerOptions
 	    {
 		    SchemasToInclude = [ "stocks", "carriers", "shipments" ],
-		    DbAdapter = DbAdapter.Postgres
+		    DbAdapter = DbAdapter.SqlServer
 	    });
     }
 }

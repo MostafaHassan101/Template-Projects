@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Modules.Common.Infrastructure.Database;
@@ -27,19 +27,18 @@ public static class DependencyInjection
 
 	private static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
 	{
-		var connectionString = configuration.GetConnectionString("Postgres");
+		var connectionString = configuration.GetConnectionString("SqlServer");
 
 		services.AddDbContext<UsersDbContext>((provider, options) =>
 		{
 			var interceptor = provider.GetRequiredService<AuditableInterceptor>();
 
 			options
-				.UseNpgsql(connectionString, npgsqlOptions =>
+				.UseSqlServer(connectionString, sqlServerOptions =>
 				{
-					npgsqlOptions.MigrationsHistoryTable(DbConsts.MigrationTableName, DbConsts.Schema);
+					sqlServerOptions.MigrationsHistoryTable(DbConsts.MigrationTableName, DbConsts.Schema);
 				})
-				.AddInterceptors(interceptor)
-				.UseSnakeCaseNamingConvention();
+				.AddInterceptors(interceptor);
 		});
 		
 		services.AddScoped<IModuleDatabaseMigrator, UsersDatabaseMigrator>();

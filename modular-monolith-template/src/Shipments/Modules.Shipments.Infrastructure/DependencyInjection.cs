@@ -12,12 +12,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddShipmentsInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var postgresConnectionString = configuration.GetConnectionString("Postgres");
+        var sqlServerConnectionString = configuration.GetConnectionString("SqlServer");
 
         services.AddDbContext<ShipmentsDbContext>(x => x
-            .UseNpgsql(postgresConnectionString, npgsqlOptions => 
-                npgsqlOptions.MigrationsHistoryTable(DbConsts.MigrationHistoryTableName, DbConsts.ShipmentsSchemaName))
-            .UseSnakeCaseNamingConvention()
+            .UseSqlServer(sqlServerConnectionString, sqlServerOptions => 
+                sqlServerOptions.MigrationsHistoryTable(DbConsts.MigrationHistoryTableName, DbConsts.ShipmentsSchemaName))
         );
         
         services.AddScoped<IModuleDatabaseMigrator, ShipmentsDatabaseMigrator>();

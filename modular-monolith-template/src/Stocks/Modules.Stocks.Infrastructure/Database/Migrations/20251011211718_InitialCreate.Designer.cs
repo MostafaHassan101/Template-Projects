@@ -2,18 +2,18 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Modules.Stocks.Infrastructure.Database;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Modules.Stocks.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(StocksDbContext))]
-    [Migration("20250330135706_InitialStocks")]
-    partial class InitialStocks
+    [Migration("20251011211718_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -21,39 +21,33 @@ namespace Modules.Stocks.Infrastructure.Database.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("stocks")
-                .HasAnnotation("ProductVersion", "9.0.3")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Modules.Stocks.Domain.Entities.ProductStock", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("AvailableQuantity")
-                        .HasColumnType("integer")
-                        .HasColumnName("available_quantity");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("LastUpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_updated_at");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("product_name");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("Id")
-                        .HasName("pk_product_stocks");
+                    b.HasKey("Id");
 
                     b.HasIndex("ProductName")
-                        .IsUnique()
-                        .HasDatabaseName("ix_product_stocks_product_name");
+                        .IsUnique();
 
-                    b.ToTable("product_stocks", "stocks");
+                    b.ToTable("ProductStocks", "stocks");
                 });
 #pragma warning restore 612, 618
         }
