@@ -61,4 +61,31 @@ public class TracedStockModuleApi(IStockModuleApi inner) : IStockModuleApi
             throw;
         }
     }
+
+    public async Task<Result<Success>> RestoreStockAsync(
+        DecreaseStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        using var activity = StocksActivitySource.Instance.StartActivity($"{StocksActivitySource.Instance.Name}.restore-stock");
+
+        activity?.SetTag("module", StocksActivitySource.Instance.Name);
+        activity?.SetTag("operation", "RestoreStock");
+        activity?.SetTag("items.count", request.Products.Count);
+
+        try
+        {
+            var response = await inner.RestoreStockAsync(request, cancellationToken);
+
+            activity?.SetTag("restore.successful", response.IsSuccess);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.message", ex.Message);
+            throw;
+        }
+    }
 }

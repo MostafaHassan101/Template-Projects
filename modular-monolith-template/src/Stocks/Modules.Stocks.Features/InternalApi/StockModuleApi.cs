@@ -1,6 +1,7 @@
 using Modules.Common.Domain.Results;
 using Modules.Stocks.Features.Features.CheckStock;
 using Modules.Stocks.Features.Features.DecreaseStock;
+using Modules.Stocks.Features.Features.RestoreStock;
 using Modules.Stocks.PublicApi;
 using Modules.Stocks.PublicApi.Contracts;
 
@@ -8,7 +9,8 @@ namespace Modules.Stocks.Features.InternalApi;
 
 internal sealed class StockModuleApi(
     ICheckStockHandler checkStockHandler,
-    IDecreaseStockHandler decreaseStockHandler) : IStockModuleApi
+    IDecreaseStockHandler decreaseStockHandler,
+    IRestoreStockHandler restoreStockHandler) : IStockModuleApi
 {
     public async Task<Result<Success>> CheckStockAsync(
         CheckStockRequest request,
@@ -22,5 +24,12 @@ internal sealed class StockModuleApi(
         CancellationToken cancellationToken)
     {
         return await decreaseStockHandler.HandleAsync(request, cancellationToken);
+    }
+
+    public async Task<Result<Success>> RestoreStockAsync(
+        DecreaseStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await restoreStockHandler.HandleAsync(request, cancellationToken);
     }
 }

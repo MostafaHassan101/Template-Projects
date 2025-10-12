@@ -1,6 +1,7 @@
 using ModularMonolith.Host.Seeding;
 using Modules.Common.API.Extensions;
 using Modules.Common.Infrastructure.Database;
+using Modules.Common.Infrastructure.Outbox;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,9 @@ builder.Services
     .AddShipmentsModule(builder.Configuration)
     .AddCarriersModule(builder.Configuration)
     .AddStocksModule(builder.Configuration);
+
+// Register Outbox Processor as a background service
+builder.Services.AddHostedService<OutboxProcessor>();
 
 // Seed entities in DEVELOPMENT mode
 if (builder.Environment.IsDevelopment())

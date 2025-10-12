@@ -34,4 +34,30 @@ public class TracedCarrierModuleApi(ICarrierModuleApi inner) : ICarrierModuleApi
             throw;
         }
     }
+
+    public async Task<Result<Success>> CancelShipmentAsync(
+        string orderId,
+        CancellationToken cancellationToken)
+    {
+        using var activity = CarriersActivitySource.Instance.StartActivity($"{CarriersActivitySource.Instance.Name}.cancel-shipment");
+
+        activity?.SetTag("module", CarriersActivitySource.Instance.Name);
+        activity?.SetTag("operation", "CancelShipment");
+        activity?.SetTag("order.id", orderId);
+
+        try
+        {
+            var response = await inner.CancelShipmentAsync(orderId, cancellationToken);
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.message", ex.Message);
+            throw;
+        }
+    }
 }

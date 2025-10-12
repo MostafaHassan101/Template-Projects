@@ -1,15 +1,13 @@
-﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Modules.Common.Domain.Events;
+using Modules.Common.Application.Saga;
 using Modules.Common.Domain.Handlers;
 using Modules.Common.Domain.Results;
-using Modules.Shipments.Features.Features.CreateShipment.Events;
+using Modules.Common.Domain.Saga;
 using Modules.Shipments.Features.Features.Shared.Errors;
 using Modules.Shipments.Features.Features.Shared.Responses;
+using Modules.Shipments.Features.Saga;
 using Modules.Shipments.Infrastructure.Database;
-using Modules.Stocks.PublicApi;
-using Modules.Stocks.PublicApi.Contracts;
 
 namespace Modules.Shipments.Features.Features.CreateShipment;
 
@@ -18,14 +16,40 @@ internal interface ICreateShipmentHandler : IHandler
     Task<Result<ShipmentResponse>> HandleAsync(CreateShipmentRequest request, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Handler for creating shipments using Saga + Outbox pattern for reliable distributed transactions
+/// </summary>
 internal sealed class CreateShipmentHandler(
     ShipmentsDbContext context,
-    IStockModuleApi stockApi,
-    IEventPublisher eventPublisher,
+    CreateShipmentSagaOrchestrator sagaOrchestrator,
+    ISagaRepository sagaRepository,
     ILogger<CreateShipmentHandler> logger)
     : ICreateShipmentHandler
 {
     public async Task<Result<ShipmentResponse>> HandleAsync(
+        CreateShipmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var idempotencyCheck = await CheckIdempotencyAsync(request, cancellationToken);
+        if (idempotencyCheck.HasValue)
+        {
+            return idempotencyCheck.Value;
+        }
+
+        var sagaData = new CreateShipmentSagaData { Request = request };
+        var sagaResult = await sagaOrchestrator.ExecuteAsync(sagaData, request.OrderId, cancellationToken);
+
+        if (sagaResult.IsError)
+        {
+            logger.LogError("Saga execution failed for order '{OrderId}': {@Errors}", 
+                request.OrderId, sagaResult.Errors);
+            return sagaResult.Errors;
+        }
+
+        return ValidateAndReturnShipment(sagaData, request.OrderId);
+    }
+
+    private async Task<Result<ShipmentResponse>?> CheckIdempotencyAsync(
         CreateShipmentRequest request,
         CancellationToken cancellationToken)
     {
@@ -36,35 +60,55 @@ internal sealed class CreateShipmentHandler(
             return ShipmentErrors.AlreadyExists(request.OrderId);
         }
 
-        var stockRequest = CreateCheckStockRequest(request);
-
-        var stockResponse = await stockApi.CheckStockAsync(stockRequest, cancellationToken);
-        if (!stockResponse.IsSuccess)
+        var existingSaga = await sagaRepository.GetByCorrelationIdAsync(request.OrderId, cancellationToken);
+        if (existingSaga != null)
         {
-            logger.LogInformation("Stock check failed: {@Errors}", stockResponse.Errors);
-            return stockResponse.Errors;
+            return await HandleExistingSagaAsync(existingSaga, request.OrderId, cancellationToken);
         }
 
-        var shipmentNumber = new Faker().Commerce.Ean8();
-        var shipment = request.MapToShipment(shipmentNumber);
-
-        await context.Shipments.AddAsync(shipment, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
-        
-        logger.LogInformation("Created shipment: {@Shipment}", shipment);
-
-        var shipmentCreatedEvent = new ShipmentCreatedEvent(shipment);
-        await eventPublisher.PublishAsync(shipmentCreatedEvent, cancellationToken);
-
-        return shipment.MapToResponse();
+        return null;
     }
 
-    private static CheckStockRequest CreateCheckStockRequest(CreateShipmentRequest request)
+    private async Task<Result<ShipmentResponse>?> HandleExistingSagaAsync(
+        SagaState existingSaga,
+        string orderId,
+        CancellationToken cancellationToken)
     {
-        return new CheckStockRequest(
-            request.Items
-                .Select(x => new ProductStock(x.Product, x.Quantity))
-                .ToList()
-        );
+        if (existingSaga.IsCompleted)
+        {
+            logger.LogInformation("Saga already completed for order '{OrderId}'", orderId);
+            var existingShipment = await context.Shipments
+                .FirstOrDefaultAsync(x => x.OrderId == orderId, cancellationToken);
+            
+            if (existingShipment != null)
+            {
+                return existingShipment.MapToResponse();
+            }
+        }
+        else if (existingSaga.IsFailed)
+        {
+            logger.LogWarning("Previous saga failed for order '{OrderId}'. Creating new saga.", orderId);
+            return null; // Allow retry
+        }
+        else
+        {
+            logger.LogWarning("Saga in progress for order '{OrderId}'", orderId);
+            return Error.Conflict("Shipment.SagaInProgress", 
+                $"Shipment creation is already in progress for order {orderId}");
+        }
+
+        return null;
+    }
+
+    private Result<ShipmentResponse> ValidateAndReturnShipment(CreateShipmentSagaData sagaData, string orderId)
+    {
+        if (sagaData.CreatedShipment == null)
+        {
+            logger.LogError("Saga completed but shipment is null for order '{OrderId}'", orderId);
+            return Error.Unexpected("Shipment.CreationFailed", "Shipment creation failed unexpectedly");
+        }
+
+        logger.LogInformation("Shipment created successfully via saga for order '{OrderId}'", orderId);
+        return sagaData.CreatedShipment.MapToResponse();
     }
 }

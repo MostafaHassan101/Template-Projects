@@ -12,4 +12,11 @@ public interface IStockModuleApi
     Task<Result<Success>> DecreaseStockAsync(
         DecreaseStockRequest request,
         CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Compensating transaction: Restores stock quantities
+    /// </summary>
+    Task<Result<Success>> RestoreStockAsync(
+        DecreaseStockRequest request,
+        CancellationToken cancellationToken);
 }

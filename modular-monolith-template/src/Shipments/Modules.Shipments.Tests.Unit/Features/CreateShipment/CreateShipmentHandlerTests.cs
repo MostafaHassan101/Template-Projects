@@ -1,12 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Modules.Common.Application.Saga;
 using Modules.Common.Domain.Events;
 using Modules.Common.Domain.Results;
+using Modules.Common.Domain.Saga;
 using Modules.Shipments.Domain.Entities;
 using Modules.Shipments.Domain.ValueObjects;
 using Modules.Shipments.Features.Features.CreateShipment;
 using Modules.Shipments.Features.Features.CreateShipment.Events;
 using Modules.Shipments.Features.Features.Shared.Requests;
+using Modules.Shipments.Features.Saga;
 using Modules.Shipments.Infrastructure.Database;
 using Modules.Stocks.PublicApi;
 using Modules.Stocks.PublicApi.Contracts;
@@ -17,8 +20,8 @@ namespace Modules.Shipments.Tests.Unit.Features.CreateShipment;
 public class CreateShipmentHandlerTests : IAsyncDisposable
 {
     private readonly ShipmentsDbContext _dbContext;
-    private readonly IStockModuleApi _stockApi;
-    private readonly IEventPublisher _eventPublisher;
+    private readonly CreateShipmentSagaOrchestrator _sagaOrchestrator;
+    private readonly ISagaRepository _sagaRepository;
     private readonly ILogger<CreateShipmentHandler> _logger;
     private readonly CreateShipmentHandler _handler;
 
@@ -31,11 +34,11 @@ public class CreateShipmentHandlerTests : IAsyncDisposable
         var loggerFactory = Substitute.For<ILoggerFactory>();
 
         _dbContext = new ShipmentsDbContext(options);
-        _stockApi = Substitute.For<IStockModuleApi>();
-        _eventPublisher = Substitute.For<IEventPublisher>();
+        _sagaOrchestrator = Substitute.For<CreateShipmentSagaOrchestrator>();
+        _sagaRepository = Substitute.For<ISagaRepository>();
         _logger = loggerFactory.CreateLogger<CreateShipmentHandler>();
 
-        _handler = new CreateShipmentHandler(_dbContext, _stockApi, _eventPublisher, _logger);
+        _handler = new CreateShipmentHandler(_dbContext, _sagaOrchestrator, _sagaRepository, _logger);
     }
 
     public async ValueTask DisposeAsync()
@@ -49,21 +52,23 @@ public class CreateShipmentHandlerTests : IAsyncDisposable
         // Arrange
         var request = GetCreateShipmentRequest();
 
-        _stockApi.CheckStockAsync(Arg.Any<CheckStockRequest>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success);
+        _sagaRepository.GetByCorrelationIdAsync(request.OrderId, Arg.Any<CancellationToken>())
+            .Returns((SagaState?)null);
+
+        _sagaOrchestrator.ExecuteAsync(Arg.Any<CreateShipmentSagaData>(), request.OrderId, Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var sagaData = callInfo.ArgAt<CreateShipmentSagaData>(0);
+                sagaData.CreatedShipment = CreateTestShipment();
+                return Result.Success;
+            });
 
         // Act
         var result = await _handler.HandleAsync(request, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
-
-        var shipment = await _dbContext.Shipments.Include(shipment => shipment.Items).FirstOrDefaultAsync(s => s.OrderId == request.OrderId);
-
-        Assert.NotNull(shipment);
-        Assert.Equal(2, shipment.Items.Count);
-
-        await _eventPublisher.Received(1).PublishAsync(Arg.Any<ShipmentCreatedEvent>(), Arg.Any<CancellationToken>());
+        await _sagaOrchestrator.Received(1).ExecuteAsync(Arg.Any<CreateShipmentSagaData>(), request.OrderId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -87,25 +92,25 @@ public class CreateShipmentHandlerTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CreateShipmentHandler_ShouldReturnError_WhenStockCheckFails()
+    public async Task CreateShipmentHandler_ShouldReturnError_WhenSagaFails()
     {
         // Arrange
         var request = GetCreateShipmentRequest();
 
-        var stockError = Error.Validation("Stock.Insufficient", "Insufficient stock");
+        var sagaError = Error.Validation("Saga.Failed", "Saga execution failed");
 
-        _stockApi.CheckStockAsync(Arg.Any<CheckStockRequest>(), Arg.Any<CancellationToken>())
-            .Returns(stockError);
+        _sagaRepository.GetByCorrelationIdAsync(request.OrderId, Arg.Any<CancellationToken>())
+            .Returns((SagaState?)null);
+
+        _sagaOrchestrator.ExecuteAsync(Arg.Any<CreateShipmentSagaData>(), request.OrderId, Arg.Any<CancellationToken>())
+            .Returns(sagaError);
 
         // Act
         var result = await _handler.HandleAsync(request, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains(result.Errors, e => e.Code == "Stock.Insufficient");
-
-        var shipment = await _dbContext.Shipments.FirstOrDefaultAsync(s => s.OrderId == request.OrderId);
-        Assert.Null(shipment);
+        Assert.Contains(result.Errors, e => e.Code == "Saga.Failed");
     }
 
     private static Shipment CreateTestShipment()
