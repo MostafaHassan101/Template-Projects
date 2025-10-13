@@ -10,13 +10,13 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class MapEndpointExtensions
 {
-    /// <summary>
-    /// Registers all API endpoints implementing <see cref="IApiEndpoint"/> from the assembly containing the specified type <typeparamref name="T"/> into the service collection.
-    /// </summary>
-    /// <param name="marker">A type whose assembly will be scanned for <see cref="IApiEndpoint"/> implementations.</param>
-    /// <param name="services">The service collection to register the endpoints into.</param>
-    /// <returns>The modified service collection with registered endpoints.</returns>
-    public static IServiceCollection RegisterApiEndpointsFromAssemblyContaining(this IServiceCollection services, Type marker)
+	/// <summary>
+	/// Registers all API endpoints implementing <see cref="IApiEndpoint"/> from the assembly containing the specified type <typeparamref name="T"/> into the service collection.
+	/// </summary>
+	/// <param name="services">The service collection to register the endpoints into.</param>
+	/// <param name="marker">A type whose assembly will be scanned for <see cref="IApiEndpoint"/> implementations.</param>
+	/// <returns>The modified service collection with registered endpoints.</returns>
+	public static IServiceCollection RegisterApiEndpointsFromAssemblyContaining(this IServiceCollection services, Type marker)
     {
         var assembly = marker.Assembly;
         
